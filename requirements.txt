@@ -1,0 +1,4 @@
+pymongo
+httpx
+python-dotenv
+loguru
