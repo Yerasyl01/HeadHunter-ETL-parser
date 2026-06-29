@@ -25,7 +25,6 @@ settings = Settings(
 
     hh_base_url=os.environ["HH_BASE_URL"],
     hh_host=os.environ["HH_HOST"],
-    hh_access_token=os.environ["HH_ACCESS_TOKEN"]
     per_page=int(os.environ["PER_PAGE"]),
     request_timeout=int(os.environ["REQUEST_TIMEOUT"]),
 
