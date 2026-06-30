@@ -17,7 +17,7 @@ class MongoManager:
                 serverSelectionTimeoutMS=5000
             )
             self._client.admin.command("ping")
-            self._database = self._client[settings.database_name]
+            self._database = self._client[settings.mongo_database]
 
         except PyMongoError as exc:
             raise DatabaseConnectionError(

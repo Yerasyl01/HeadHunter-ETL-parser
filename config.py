@@ -7,7 +7,7 @@ load_dotenv()
 @dataclass(frozen=True)
 class Settings:
     mongo_uri: str
-    database_name: str
+    mongo_database: str
 
     redis_url: str
     redis_queue_name: str
@@ -24,7 +24,7 @@ class Settings:
 
 settings = Settings(
     mongo_uri=os.environ["MONGO_URI"],
-    database_name=os.environ["DATABASE_NAME"],
+    mongo_database=os.environ["MONGO_DATABASE"],
 
     redis_url=os.environ["REDIS_URL"],
     redis_queue_name=os.environ["REDIS_QUEUE_NAME"],
