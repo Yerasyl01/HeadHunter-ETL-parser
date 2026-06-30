@@ -35,7 +35,7 @@ class MongoManager:
 
     @property
     def raw_vacancies(self) -> Collection:
-        return self.database["hh_raw_vacancies  "]
+        return self.database["hh_raw_vacancies"]
 
     @property
     def metadata(self) -> Collection:
