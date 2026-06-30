@@ -9,3 +9,4 @@ JSON: TypeAlias = (
     | bool
     | None
 )
+QUEUE_SENTINEL="__QUEUE_CLOSED__"

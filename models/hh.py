@@ -1,11 +1,8 @@
 from typing import Any, NotRequired, TypedDict
 
-class HHVacancy(TypedDict):
-    id: str
-    name: str
-    salary: NotRequired[dict[str, Any] | None]
+HHVacancy = dict[str, Any]
 
-class HHVacancyResponse(TypedDict):
+class HHVacancyPage(TypedDict):
     page: int
-    pages: int
-    items: list[HHVacancy]
+    has_next: bool
+    vacancies: list[HHVacancy]

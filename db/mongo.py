@@ -12,7 +12,10 @@ class MongoManager:
 
     def connect(self) -> None:
         try:
-            self._client = MongoClient(settings.mongo_uri)
+            self._client = MongoClient(
+                settings.mongo_uri,
+                serverSelectionTimeoutMS=5000
+            )
             self._client.admin.command("ping")
             self._database = self._client[settings.database_name]
 
@@ -25,14 +28,14 @@ class MongoManager:
     def database(self) -> Database:
         if self._database is None:
             raise DatabaseConnectionError(
-                "MongoDB has not been connected."
+                "MongoDB is not connected."
+                "Call mongodb.connect() first."
             )
-
         return self._database
 
     @property
-    def vacancies(self) -> Collection:
-        return self.database["hh_raw"]
+    def raw_vacancies(self) -> Collection:
+        return self.database["hh_raw_vacancies  "]
 
     @property
     def metadata(self) -> Collection:
