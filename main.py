@@ -1,15 +1,19 @@
-from api.client import HHClient
-from transformers.hh_vacancy_transformer import HHVacancyTransformer
-from loaders.mongo_vacancy_loader import MongoVacancyLoader
+import logging
+import utils.logging_config
 from db.mongo import mongodb
 from db.redis import redisdb
 from queues.redis import RedisVacancyQueue
+from api.client import HHClient
+from producer.search_planner import SearchPlanner
 from producer.vacancy_producer import VacancyProducer
 from workers.vacancy_consumer import VacancyConsumer
+from transformers.hh_vacancy_transformer import HHVacancyTransformer
+from loaders.mongo_vacancy_loader import MongoVacancyLoader
 from concurrent.futures import ThreadPoolExecutor
 from config import settings
 from models.etl_stats import ETLStats
-from utils.logger import logger
+
+logger = logging.getLogger(__name__)
 
 def main() -> None:
     try:
@@ -20,7 +24,8 @@ def main() -> None:
         queue.clear()
 
         with HHClient() as client:
-            producer = VacancyProducer(client, queue)
+            planner = SearchPlanner(client)
+            producer = VacancyProducer(client, queue, planner)
             consumers = [
                 VacancyConsumer(
                     worker_id=i+1,
@@ -38,7 +43,7 @@ def main() -> None:
                 ]
 
                 queued = producer.run()
-                logger.info(f"Queued {queued} vacancies")
+                logger.info("Queued %d vacancies", queued)
                 queue.close(settings.worker_count)
 
                 worker_stats = [
@@ -48,9 +53,10 @@ def main() -> None:
 
             for consumer, stats in zip(consumers, worker_stats):
                 logger.info(
-                    f"Worker {consumer.worker_id}: "
-                    f"{stats.loaded} loaded"
-                    f"({stats.duplicates} duplicates)"
+                    "Worker %d: %d loaded (%d duplicates)",
+                    consumer.worker_id,
+                    stats.loaded,
+                    stats.duplicates
                 )
             stats = ETLStats()
             for worker_stat in worker_stats:

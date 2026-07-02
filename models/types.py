@@ -1,12 +1,14 @@
 from typing import TypeAlias
 
-JSON: TypeAlias = (
-    dict[str, "JSON"]
-    | list["JSON"]
+JSONValue: TypeAlias = (
+    dict[str, "JSONValue"]
+    | list["JSONValue"]
     | str
     | int
     | float
     | bool
     | None
 )
+JSONObject: TypeAlias = dict[str, JSONValue]
+
 QUEUE_SENTINEL="__QUEUE_CLOSED__"

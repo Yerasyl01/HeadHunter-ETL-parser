@@ -16,4 +16,5 @@ venv/
 .kateproject
 
 # Logs
+logs/
 *.log

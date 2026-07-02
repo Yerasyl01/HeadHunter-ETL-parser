@@ -1,8 +1,13 @@
 from typing import Any, NotRequired, TypedDict
+from .types import JSONObject
 
-HHVacancy = dict[str, Any]
+HHVacancy = JSONObject
+SearchCluster = JSONObject
+SearchClusters = dict[str, SearchCluster]
 
 class HHVacancyPage(TypedDict):
     page: int
-    has_next: bool
+    next_page: int | None
     vacancies: list[HHVacancy]
+    found: int
+    search_clutsers: SearchClusters

@@ -1,5 +1,4 @@
 python-dotenv
-loguru
 httpx
 pymongo
 redis>=6.0
