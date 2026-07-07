@@ -17,6 +17,7 @@ class Settings:
     request_timeout: int
 
     log_level: str
+    logs_to_keep: int
 
     user_agent: str
     worker_count: int
@@ -35,6 +36,7 @@ settings = Settings(
     request_timeout=int(os.environ["REQUEST_TIMEOUT"]),
 
     log_level=os.environ["LOG_LEVEL"],
+    logs_to_keep=int(os.environ["LOGS_TO_KEEP"]),
 
     user_agent=os.environ["USER_AGENT"]
 )

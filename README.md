@@ -1,98 +1,137 @@
-# HH ETL Pipeline
+# HH ETL
 
-A production-oriented ETL pipeline that extracts vacancy data from the HeadHunter (HH) API, transforms it into a normalized format, and loads it into MongoDB using a concurrent worker architecture backed by Redis.
+A Python Bronze/Silver ETL pipeline for extracting vacancy data from the HeadHunter (HH) API, storing raw vacancy documents in MongoDB (Bronze), and transforming them into an analytical Parquet dataset (Silver) using Polars.
+
+The project follows a modular architecture with concurrent ingestion, Redis-backed work queues, and a recursive search planner that overcomes the HH API's 2,000-result search limitation.
+
+---
 
 ## Features
 
-* Extracts vacancies from the HH API
-* Producer–consumer architecture
-* Redis-backed work queue
-* Concurrent workers using `ThreadPoolExecutor`
-* MongoDB storage with indexes
-* Configurable through environment variables
-* Docker Compose support
-* Modular and extensible design
+* Recursive search planning for large result sets
+* Concurrent producer/consumer ingestion pipeline
+* Redis-backed vacancy queue
+* Bronze layer stored in MongoDB
+* Silver analytical dataset stored as Parquet
+* Batch-based transformation with Polars
+* Duplicate detection using MongoDB unique indexes
 * Structured logging
-* Automatic retry handling for transient failures
+* Docker and Docker Compose support
+* Interface-based architecture for easy extension
+
+---
+
+## Technology Stack
+
+| Component        | Technology                     |
+| ---------------- | ------------------------------ |
+| Language         | Python 3.13                    |
+| Data Processing  | Polars                         |
+| Source           | HeadHunter (HH) API            |
+| Bronze Storage   | MongoDB                        |
+| Queue            | Redis                          |
+| Silver Storage   | Apache Parquet                 |
+| Containerization | Docker & Docker Compose        |
+| Concurrency      | `ThreadPoolExecutor`           |
+| Configuration    | Environment variables (`.env`) |
+| Logging          | Python `logging`               |
 
 ---
 
 ## Architecture
 
+```text
+                  HH API
+                     │
+                     ▼
+             SearchPlanner
+                     │
+                     ▼
+            VacancyProducer
+                     │
+                     ▼
+               Redis Queue
+                     │
+          ┌──────────┴──────────┐
+          ▼                     ▼
+    VacancyConsumer      VacancyConsumer
+          │                     │
+          └──────────┬──────────┘
+                     ▼
+          Bronze Transformer
+                     │
+                     ▼
+           MongoDB (Bronze)
+                     │
+                     ▼
+            Silver Pipeline
+                     │
+                     ▼
+          Silver Transformer
+                     │
+                     ▼
+        Parquet Dataset (Silver)
 ```
-          HH API
-             │
-             ▼
-      HHClient (Producer)
-             │
-             ▼
-      Redis Vacancy Queue
-             │
-   ┌─────────┴─────────┐
-   │         │         │
-Worker 1  Worker 2  Worker N
-   │         │         │
-   ▼         ▼         ▼
-Transformer → Loader → MongoDB
-```
 
-Pipeline stages:
+---
 
-1. **Extract**
+## Data Layers
 
-   * Downloads vacancy pages from the HH API.
-   * Pushes raw vacancies into a Redis queue.
+### Bronze
 
-2. **Transform**
+* Raw vacancy documents returned by the HH API
+* Stored in MongoDB
+* Preserves the original API structure
+* Serves as the source of truth for downstream processing
 
-   * Converts raw HH vacancy objects into normalized documents.
+### Silver
 
-3. **Load**
-
-   * Inserts transformed documents into MongoDB.
-   * Duplicate documents are ignored.
+* Flattened analytical dataset
+* Stored as partitioned Parquet files
+* Optimized for analytics with Polars, DuckDB, Pandas and BI tools
+* Schema documented in `silver/SCHEMA.md`
 
 ---
 
 ## Project Structure
 
-```
+```text
 hh-etl
-├── api/                 # HH API client
-├── contracts/           # Interfaces (ports)
-├── db/                  # MongoDB and Redis clients
-├── exceptions/          # Custom exceptions
-├── loaders/             # Data loaders
-├── models/              # Data models
-├── producer/            # Vacancy producer
-├── queues/              # Queue implementations
-├── transformers/        # Data transformers
-├── utils/               # Logging, retry, timing
-├── workers/             # Consumer workers
+├── api/              # HH API client
+├── bronze/           # Bronze pipeline
+├── contracts/        # ETL interfaces
+├── data/             # Generated Parquet dataset
+├── db/               # MongoDB and Redis managers
+├── exceptions/       # Custom exceptions
+├── loaders/          # Data loaders
+├── models/           # Shared models and types
+├── producer/         # Search planning and extraction
+├── queues/           # Queue implementations
+├── silver/           # Silver pipeline and schema
+├── utils/            # Logging, retry, timer
+├── workers/          # Queue consumers
 ├── compose.yaml
 ├── Dockerfile
 ├── config.py
-├── main.py
+├── main.py           # Pipeline orchestrator
 └── requirements.txt
 ```
 
 ---
 
-## Technologies
+## Requirements
 
-* Python 3
+* Python 3.13+
 * MongoDB
 * Redis
-* Docker
-* Docker Compose
+
+or simply Docker and Docker Compose.
 
 ---
 
 ## Configuration
 
 Create a `.env` file from `.env.example`.
-
-Example:
 
 ```env
 # MongoDB
@@ -104,48 +143,20 @@ REDIS_URL=redis://localhost:6379/0
 REDIS_QUEUE_NAME=hh:vacancies
 WORKER_COUNT=5
 
-# HH API
+# HH
 HH_BASE_URL=https://almaty.hh.kz
 HH_SEARCH_PATH=/search/vacancy
 REQUEST_TIMEOUT=30
 
 # Logging
 LOG_LEVEL=INFO
+LOGS_TO_KEEP=10
 
-# User Agent
+# Browser User-Agent
 USER_AGENT=
 ```
 
-### Environment variables
-
-| Variable           | Description                         |
-| ------------------ | ----------------------------------- |
-| `MONGO_URI`        | MongoDB connection string           |
-| `MONGO_DATABASE`   | Database name                       |
-| `REDIS_URL`        | Redis connection string             |
-| `REDIS_QUEUE_NAME` | Queue used by producer and workers  |
-| `WORKER_COUNT`     | Number of concurrent worker threads |
-| `HH_BASE_URL`      | HH API base URL                     |
-| `HH_SEARCH_PATH`   | Vacancy search endpoint             |
-| `REQUEST_TIMEOUT`  | HTTP request timeout (seconds)      |
-| `LOG_LEVEL`        | Logging level                       |
-| `USER_AGENT`       | Optional custom User-Agent          |
-
----
-
-## Running with Docker
-
-Build and start the infrastructure:
-
-```bash
-docker compose up --build
-```
-
-Run the ETL:
-
-```bash
-docker compose run --rm app
-```
+`USER_AGENT` should contain a modern browser User-Agent string.
 
 ---
 
@@ -157,121 +168,107 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Start MongoDB and Redis.
-
-Run:
+Start MongoDB and Redis, then run:
 
 ```bash
 python main.py
 ```
 
----
+The pipeline will:
 
-## How It Works
-
-When the application starts it:
-
-1. Connects to MongoDB.
-2. Connects to Redis.
-3. Clears the Redis queue.
-4. Starts worker threads.
-5. Downloads vacancies from the HH API.
-6. Pushes each vacancy into Redis.
-7. Workers continuously:
-
-   * read vacancies,
-   * transform them,
-   * load them into MongoDB.
-8. After all vacancies have been queued, the producer sends termination signals.
-9. Workers finish processing remaining items and exit.
-10. The application prints ETL statistics.
+1. Extract vacancies from the HH API.
+2. Store raw documents in MongoDB (Bronze).
+3. Read Bronze data in batches.
+4. Transform the data into the Silver schema.
+5. Write the analytical dataset as Parquet files under `data/vacancies/`.
 
 ---
 
-## Main Components
+## Running with Docker
 
-### HHClient
+Build and start the services:
 
-Responsible for communicating with the HH API.
-
-### VacancyProducer
-
-Downloads vacancies and pushes them into Redis.
-
-### RedisVacancyQueue
-
-Implements the producer–consumer queue.
-
-### VacancyConsumer
-
-Consumes vacancies from Redis and performs transformation and loading.
-
-### HHVacancyTransformer
-
-Converts raw HH vacancy objects into normalized MongoDB documents.
-
-### MongoVacancyLoader
-
-Stores transformed documents in MongoDB.
-
----
-
-## Concurrency Model
-
-The application uses a producer–consumer architecture.
-
-* One producer downloads vacancies.
-* Multiple consumers process vacancies concurrently.
-* Redis provides a shared queue between producer and workers.
-* `ThreadPoolExecutor` manages worker threads.
-
-The number of workers is configured via:
-
-```env
-WORKER_COUNT=5
+```bash
+docker compose up --build
 ```
+
+---
+
+## Pipeline
+
+### Bronze Stage
+
+1. The SearchPlanner recursively partitions large searches until each request contains at most 2,000 vacancies.
+2. The VacancyProducer downloads every page for each planned search.
+3. Vacancies are pushed into a Redis queue.
+4. Multiple worker threads consume vacancies concurrently.
+5. Each vacancy is transformed into the Bronze schema.
+6. Raw vacancy documents are stored in MongoDB.
+
+### Silver Stage
+
+1. Bronze documents are read from MongoDB in batches.
+2. Relevant fields are flattened into an analytical schema.
+3. Nested structures are normalized.
+4. Data types are converted where necessary.
+5. The resulting dataset is written as partitioned Parquet files.
+
+---
+
+## Duplicate Handling
+
+Search partitions may overlap, causing the same vacancy to be encountered multiple times during extraction.
+
+MongoDB uses a unique index on the vacancy ID, allowing duplicate documents to be skipped automatically while preserving a complete extraction process.
 
 ---
 
 ## Logging
 
-The application reports:
+The application produces structured logs including:
 
-* database connections
-* queue activity
-* worker progress
-* duplicate documents
+* Search planning
+* Page downloads
+* Worker activity
+* Duplicate statistics
 * ETL summary
-* unexpected failures
 
 Example:
 
-```
-Queued 897231 vacancies
+```text
+Queued 72064 vacancies
 
-Worker 1: 179501 loaded (821 duplicates)
-Worker 2: 179486 loaded (803 duplicates)
-Worker 3: 179420 loaded (815 duplicates)
-Worker 4: 179378 loaded (799 duplicates)
-Worker 5: 179402 loaded (808 duplicates)
+Worker 1: 14450 loaded (1526 duplicates)
+Worker 2: 14402 loaded (1578 duplicates)
+Worker 3: 14395 loaded (1572 duplicates)
+Worker 4: 14397 loaded (1543 duplicates)
+Worker 5: 14415 loaded (1580 duplicates)
 
 ETLStats(
-    loaded=897187,
-    duplicates=4046
+    extracted=72059,
+    transformed=72059,
+    loaded=72059,
+    duplicates=7799,
+    failed=0
 )
 ```
 
 ---
 
-## Future Improvements
+## Future Work
 
-Possible extensions include:
+Planned improvements include:
 
-* Scheduled execution (cron or scheduler)
-* Incremental synchronization
-* Celery workers
-* Data enrichment
-* Additional data sources
-* Metrics and monitoring
+* Incremental Bronze → Silver synchronization
+* Partitioned Parquet datasets
+* Gold analytical layer
+* Workflow orchestration
+* Data quality validation
+* Monitoring and metrics
 * Power BI dashboards
-* Automated tests
+
+---
+
+## License
+
+This project is provided for educational and research purposes.

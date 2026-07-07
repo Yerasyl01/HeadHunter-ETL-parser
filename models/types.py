@@ -11,4 +11,5 @@ JSONValue: TypeAlias = (
 )
 JSONObject: TypeAlias = dict[str, JSONValue]
 
+Vacancy = JSONObject
 QUEUE_SENTINEL="__QUEUE_CLOSED__"

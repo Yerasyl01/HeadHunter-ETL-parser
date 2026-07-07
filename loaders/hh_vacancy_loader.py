@@ -1,7 +1,7 @@
 from db.mongo import mongodb, MongoManager
 from models.hh import HHVacancy
 
-class MongoVacancyLoader:
+class HHVacancyLoader:
     def __init__(self, mongodb: MongoManager) -> None:
         self._mongodb = mongodb
 

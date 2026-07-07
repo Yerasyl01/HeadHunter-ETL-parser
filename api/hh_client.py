@@ -109,7 +109,8 @@ class HHClient:
     def _request_json(self, url: str, **kwargs) -> dict:
         self._request_count += 1
         exc_last: HHAPIError | None = None
-        for attempt in range(3):
+        seen_versions: set[str] = set()
+        for attempt in range(10):
             try:
                 return self._get_json(url, **kwargs)
             except HHAPIError as exc:
@@ -117,17 +118,27 @@ class HHClient:
                 or exc.response.status_code != 406):
                     raise
                 exc_last = exc
+                seen_versions.add(self._static_version)
                 logger.warning(
-                    "406 with X-Static-Version=%s",
-                    self._static_version,
-                )
-                logger.warning(
-                    "Refreshing static version... (attempt %s)",
+                    "406 attempt=%d server=%s x-static-version=%s x-request-id=%s",
                     attempt + 1,
+                    exc.response.headers.get("server"),
+                    self._static_version,
+                    exc.response.headers.get("x-request-id"),
                 )
+                old_version = self._static_version
                 self._bootstrap()
+                seen_versions.add(self._static_version)
+                if self._static_version != old_version:
+                    logger.warning(
+                        "X-Static-Version %s -> %s",
+                        old_version,
+                        self._static_version,
+                    )
+                time.sleep(min(2 ** attempt, 10))
         raise HHAPIError(
-            "Failed after bootstrap retries.",
+            "Failed after bootstrap retries. "
+            f"Observed versions: {sorted(seen_versions)}",
             response=exc_last.response,
         ) from exc_last
 

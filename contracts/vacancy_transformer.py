@@ -1,6 +1,6 @@
 from typing import Protocol
-from models.hh import HHVacancy
+from models.types import Vacancy
 
 class VacancyTransformer(Protocol):
-    def transform(self, vacancy: HHVacancy) -> HHVacancy:
+    def transform(self, vacancy: Vacancy) -> Vacancy:
         ...

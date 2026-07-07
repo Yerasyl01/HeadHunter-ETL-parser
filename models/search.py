@@ -12,7 +12,7 @@ class SearchRequest:
             params={
                 "ored_clusters": "true",
                 "items_on_page": "100",
-                "area": "2"
+            #   "area": "40"
             }
         )
 

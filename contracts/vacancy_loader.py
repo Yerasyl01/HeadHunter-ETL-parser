@@ -1,6 +1,6 @@
 from typing import Protocol
-from models.hh import HHVacancy
+from models.types import Vacancy
 
 class VacancyLoader(Protocol):
-    def load(self, vacancy: HHVacancy) -> None:
+    def load(self, vacancy: Vacancy) -> None:
         ...

@@ -1,8 +1,19 @@
-from typing import Any, NotRequired, TypedDict
-from .types import JSONObject
+from typing import Any, NotRequired, TypedDict, NamedTuple
+from .types import JSONObject, Vacancy
 
-HHVacancy = JSONObject
-SearchCluster = JSONObject
+HHVacancy = Vacancy
+
+class SearchClusterGroup(TypedDict):
+    id: str
+    title: str
+    count: int
+    order: int
+    query: NotRequired[str]
+    disabled: NotRequired[bool]
+
+class SearchCluster(TypedDict):
+    groups: dict[str, SearchClusterGroup]
+
 SearchClusters = dict[str, SearchCluster]
 
 class HHVacancyPage(TypedDict):
@@ -10,4 +21,6 @@ class HHVacancyPage(TypedDict):
     next_page: int | None
     vacancies: list[HHVacancy]
     found: int
-    search_clutsers: SearchClusters
+    search_clusters: SearchClusters
+
+ClusterCandidate = tuple[int, str, SearchCluster]

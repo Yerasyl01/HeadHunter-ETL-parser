@@ -1,7 +1,8 @@
 from contracts import VacancyQueue, VacancyTransformer, VacancyLoader
 from models.types import QUEUE_SENTINEL
 from models.etl_stats import ETLStats
-
+import logging
+logger = logging.getLogger(__name__)
 class VacancyConsumer:
     def __init__(
         self,

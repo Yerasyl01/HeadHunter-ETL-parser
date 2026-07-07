@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from typing import Protocol
-from models.hh import HHVacancy
+from models.types import Vacancy
 
 class VacancySource(Protocol):
-    def extract(self) -> Iterator[HHVacancy]:
+    def extract(self) -> Iterator[Vacancy]:
         ...

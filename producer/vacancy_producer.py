@@ -1,5 +1,5 @@
 import logging
-from api.client import HHClient
+from api.hh_client import HHClient
 from contracts import VacancyQueue
 from models.search import SearchRequest
 from producer.search_planner import SearchPlanner
