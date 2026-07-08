@@ -133,8 +133,9 @@ class SearchPlanner:
         )
         if not candidates:
             raise self._dead_end(request, found_vacancies, depth, group=True)
-        cluster_succeeded = False
+
         for index, (_, cluster_name, cluster) in enumerate(candidates, start=1):
+            cluster_succeeded = False
             logger.info(
                 "%sTrying cluster [%d/%d] '%s'",
                 indent,
@@ -142,7 +143,6 @@ class SearchPlanner:
                 len(candidates),
                 cluster_name,
             )
-            group_succeded = False
             total_groups = len(cluster["groups"])
             for i, group in enumerate(cluster["groups"].values(), start=1):
                 logger.info(
@@ -154,18 +154,31 @@ class SearchPlanner:
                     group["count"],
                 )
                 child = self._child_request(request, cluster_name, group)
+                if group["count"] <= 2000:
+                    logger.info(
+                        "%sLeaf '%s' (%d)",
+                        indent,
+                        group["title"],
+                        group["count"],
+                    )
+                    self._planned_found += group["count"]
+                    cluster_succedeed = True
+                    yield child, group["count"]
+                    continue
                 try:
+                    yielded = False
                     for result in self._plan(child, found_vacancies, depth + 1):
-                        group_succeeded = True
+                        yielded = True
                         cluster_succeeded = True
                         yield result
-                    logger.info(
-                        "%sGroup [%d/%d] '%s' succeeded",
-                        indent,
-                        i,
-                        total_groups,
-                        group["title"],
-                    )
+                    if yielded:
+                        logger.info(
+                            "%sGroup [%d/%d] '%s' succeeded",
+                            indent,
+                            i,
+                            total_groups,
+                            group["title"],
+                        )
                 except GroupDeadEndError:
                     logger.info(
                         "%sGroup [%d/%d] '%s' failed",

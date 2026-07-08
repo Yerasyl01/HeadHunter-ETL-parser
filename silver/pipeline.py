@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from db.mongo import mongodb
 from silver.transformer import HHVacancyTransformer
+from bronze.normalize import normalize
 
 def read_bronze(batch_size: int = 10000) -> Iterator[pl.DataFrame]:
     cursor = mongodb.raw_vacancies.find()
@@ -12,7 +13,7 @@ def read_bronze(batch_size: int = 10000) -> Iterator[pl.DataFrame]:
         batch = list(itertools.islice(cursor, batch_size))
         if not batch:
             break
-        yield pl.DataFrame(batch)
+        yield pl.DataFrame([normalize(doc) for doc in batch])
 
 def main() -> None:
     mongodb.connect()
