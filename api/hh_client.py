@@ -67,7 +67,7 @@ class HHClient:
 
     @staticmethod
     def _extract_static_version(html: str) -> str:
-        match = re.search(r'build:\s*"([^"]+)"', html)
+        match = re.search(r'"build":\s*"([^"]+)"', html)
         if match is None:
             raise HHAPIError(
                 f"Could not determine HH build version. "
@@ -161,3 +161,10 @@ class HHClient:
             "found": search_result["totalResults"],
             "search_clusters": response["searchClusters"],
         }
+
+if __name__ == '__main__':
+    import json
+    client = HHClient()
+    data = client._request_json(settings.hh_search_path, params={"page": 0})
+    with open("hh_vacancy_page.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
